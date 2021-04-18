@@ -1,0 +1,5 @@
+.foo-bar {
+  @include font-defaults;
+
+  color: $harvey-green;
+}
