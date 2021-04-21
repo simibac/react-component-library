@@ -1,67 +1,55 @@
 import React, { useState } from "react";
-import { Button, Modal, Space, Tag, Typography } from "antd";
+import { Button, Collapse, Form, Modal, Space, Tag, Typography } from "antd";
 import { ExclamationCircleOutlined, PlusOutlined } from "@ant-design/icons";
-import IClaimConstraintConfig from "../../constants/toexternalmodule";
 import useConstraintGenerator, {
   IUseCoinstraintGenerator,
 } from "../../hooks/useConstraintGenerator";
 import { ClaimConfigurator } from "../ClaimConfigurator/ClaimConfigurator";
-import JsonBlock from "../JsonBlock/JsonBlock";
-import useClaimConfigurator from "../../hooks/useClaimGenerator";
-
+import useClaimConfigurator, {
+  IUseClaimGenerator,
+} from "../../hooks/useClaimGenerator";
+import { AuthConfiguratorProps } from "./AuthConfigurator.types";
+import { ConstraintConfigurator } from "../ConstraintConfigurator";
 const { Title, Text } = Typography;
-export interface AuthConfiguratorProps {
-  authConfig: Array<IClaimConstraintConfig>;
-  setAuthConfig: any;
-  addClaimConstraint: (cliamConstraint: IClaimConstraintConfig) => void;
-  removeClaimConstraint: (index: number) => void;
-  devMode: boolean;
-  onSubmit: () => any;
-}
-
+const { Panel } = Collapse;
 export const AuthConfigurator: React.FC<AuthConfiguratorProps> = ({
   authConfig,
-  setAuthConfig,
   addClaimConstraint,
   removeClaimConstraint,
   devMode,
-  onSubmit,
 }) => {
   const constraintProps: IUseCoinstraintGenerator = useConstraintGenerator();
-  const {
-    claim,
-    setClaim,
-    resetClaim,
-    selectedContextOptions,
-    setSelectedContextOptions,
-  } = useClaimConfigurator();
+  const claimProps: IUseClaimGenerator = useClaimConfigurator();
   const [showModal, setShowModal] = useState(false);
 
-  const onComplete = () => {};
+  const [form] = Form.useForm();
 
   const handleAddClaim = () => {
     setShowModal(true);
   };
 
   const handleOk = () => {
-    addClaimConstraint({ claim, constraint: constraintProps.constraint });
-    setShowModal(false);
+    form.validateFields().then((values) => {
+      addClaimConstraint({
+        claim: claimProps.claim,
+        constraint: constraintProps.constraint,
+      });
+      setShowModal(false);
+    });
   };
+
   const handleCancel = () => {
-    resetClaim();
+    claimProps.resetClaim();
     constraintProps.resetConstraint();
     setShowModal(false);
   };
+
   const handleRemoveClaimConstraint = (index: number) => {
-    console.log(index);
     removeClaimConstraint(index);
   };
 
   return (
-    <>
-      <Title level={5}>
-        Create confituration for the necessary authentication claims
-      </Title>
+    <Space direction="vertical" style={{ width: "100%" }}>
       <Space>
         {authConfig.map((claimConstraint, index) => (
           <Tag
@@ -85,24 +73,46 @@ export const AuthConfigurator: React.FC<AuthConfiguratorProps> = ({
           Add Auth Claim Constraint
         </Button>
       </Space>
-
-      <Modal visible={showModal} onCancel={handleCancel} onOk={handleOk}>
+      <Modal
+        visible={showModal}
+        onCancel={handleCancel}
+        onOk={handleOk}
+        title="Add new claim to auth configuration"
+        footer={[
+          <Button onClick={handleCancel}>Cancel</Button>,
+          <Button
+            form="claim-form"
+            key="submit"
+            htmlType="submit"
+            onClick={handleOk}
+            type="primary"
+          >
+            Submit
+          </Button>,
+        ]}
+      >
         <ClaimConfigurator
-          claim={claim}
-          setClaim={setClaim}
-          selectedContextOptions={selectedContextOptions}
-          setSelectedContextOptions={setSelectedContextOptions}
-          constraintProps={constraintProps}
+          {...claimProps}
           devMode={devMode}
-          onComplete={onComplete}
+          form={form}
+          constraintConfigurator={
+            <ConstraintConfigurator
+              {...constraintProps}
+              type={claimProps.dataType}
+              devMode={devMode}
+            />
+          }
         />
       </Modal>
       {devMode && (
-        <JsonBlock title="Preview Auth Configuration" data={authConfig} />
+        <Collapse>
+          <Panel header="Preview Auth Configuration" key="1">
+            <code>
+              <pre>{authConfig && JSON.stringify(authConfig, null, 2)}</pre>
+            </code>
+          </Panel>
+        </Collapse>
       )}
-      <Button type="primary" onClick={onSubmit}>
-        Send To Blockchain
-      </Button>
-    </>
+    </Space>
   );
 };

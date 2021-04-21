@@ -37,7 +37,7 @@ export default function useConstraintGenerator(): IUseCoinstraintGenerator {
   const [testConstraint, setTestConstraint] = useState<string>("");
 
   const updateConstraint = (
-    condition: Condition,
+    cond: Condition,
     arg1: string,
     arg2: string,
     value: string
@@ -45,19 +45,19 @@ export default function useConstraintGenerator(): IUseCoinstraintGenerator {
     setArg1(arg1);
     setArg2(arg2);
     setTestValue(value);
-    if (condition) {
-      setCondition(condition);
-      let expression = condition.pattern;
+    if (cond) {
+      setCondition(cond);
+      let expression = cond.pattern;
       expression = expression.split("${ARG_1}").join(arg1);
       expression = expression.split("${ARG_2}").join(arg2);
-      setConstraint({ js: expression, desc: description });
       expression = expression.split("${VALUE}").join(value);
       setTestConstraint(expression);
-      let desc = condition.description;
+      let desc = cond.description;
       desc = desc.split("'${VALUE}'").join("value");
       desc = desc.split("${ARG_1}").join(arg1);
       desc = desc.split("${ARG_2}").join(arg2);
       setDescription(desc);
+      setConstraint({ js: expression, desc: desc });
     }
   };
 

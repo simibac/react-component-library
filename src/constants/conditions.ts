@@ -9,7 +9,7 @@ export const CONDITIONS: Array<Condition> = [
   ),
   new Condition(
     "contains",
-    "'${ARG_1}'.includes('${VALUE}')",
+    "'${VALUE}'.includes('${ARG_1}')",
     "The '${VALUE}' must contain the substring '${ARG_1}'.",
     "TEXT"
   ),

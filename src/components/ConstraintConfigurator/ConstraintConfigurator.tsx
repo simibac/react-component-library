@@ -11,6 +11,7 @@ import {
   Collapse,
   Button,
   Alert,
+  Form,
 } from "antd";
 
 import { ConstraintConfiguratorProps } from "./ConstraintConfigurator.types";
@@ -24,7 +25,6 @@ const { Panel } = Collapse;
 export const ConstraintConfigurator: React.FC<ConstraintConfiguratorProps> = ({
   type,
   devMode,
-
   constraint,
   conditions,
   condition,
@@ -102,14 +102,22 @@ export const ConstraintConfigurator: React.FC<ConstraintConfiguratorProps> = ({
   );
 
   const Configurator = (
-    <>
+    <Form.Item>
       <Row gutter={[16, 16]} align="middle">
         <Col flex="150px">{SelectBefore}</Col>
 
         {type === "TEXT" &&
           (condition.name === "is" || condition.name === "contains") && (
             <Col flex="auto">
-              <Input onChange={(e) => handleArg1Input(e.target.value)} />
+              <Form.Item
+                label="value"
+                name="value"
+                noStyle
+                required
+                rules={[{ required: true, message: "Value is required" }]}
+              >
+                <Input onChange={(e) => handleArg1Input(e.target.value)} />
+              </Form.Item>
             </Col>
           )}
 
@@ -126,7 +134,15 @@ export const ConstraintConfigurator: React.FC<ConstraintConfiguratorProps> = ({
             condition.name === "is greater or equal" ||
             condition.name === "is less or equal") && (
             <Col flex="auto">
-              <Input onChange={(e) => handleArg1Input(e.target.value)} />
+              <Form.Item
+                label="value"
+                name="value"
+                noStyle
+                required
+                rules={[{ required: true, message: "Value is required" }]}
+              >
+                <Input onChange={(e) => handleArg1Input(e.target.value)} />
+              </Form.Item>
             </Col>
           )}
 
@@ -135,11 +151,19 @@ export const ConstraintConfigurator: React.FC<ConstraintConfiguratorProps> = ({
             condition.name === "is before" ||
             condition.name === "is after") && (
             <Col flex="auto">
-              <DatePicker
-                onChange={(_, dateString: string) =>
-                  handleArg1Input(dateString)
-                }
-              />
+              <Form.Item
+                label="date"
+                name="date"
+                noStyle
+                required
+                rules={[{ required: true, message: "Date is required" }]}
+              >
+                <DatePicker
+                  onChange={(_, dateString: string) =>
+                    handleArg1Input(dateString)
+                  }
+                />
+              </Form.Item>
             </Col>
           )}
 
@@ -161,89 +185,101 @@ export const ConstraintConfigurator: React.FC<ConstraintConfiguratorProps> = ({
           </Col>
         )}
       </Row>
-    </>
+    </Form.Item>
   );
 
   const DebugSection = (
-    <Collapse>
-      <Panel header="Test Constraint Evaluation" key="1">
-        <Space direction="vertical" style={{ width: "100%" }}>
-          <Text>
-            Use the following Input to evaluate the constraint you defined.
-          </Text>
-          <Space style={{ width: "100%" }}>
-            {(type === "TEXT" || type === "NUMBER" || type === "BOOLEAN") && (
-              <Input
-                value={testValue}
-                placeholder="value to test"
-                onChange={(e) => {
-                  updateTestValue(e.target.value);
-                }}
-                onPressEnter={onTest}
-              />
-            )}
-            {type === "DATE" && (
-              <DatePicker
-                placeholder="value to test"
-                onChange={(_, dateString: string) => {
-                  updateTestValue(dateString);
-                }}
-              />
-            )}
-            <Button type="primary" onClick={onTest}>
-              validate
-            </Button>
+    <Form.Item>
+      <Collapse>
+        <Panel header="Test Constraint Evaluation" key="1">
+          <Space direction="vertical" style={{ width: "100%" }}>
+            <Text>
+              Use the following Input to evaluate the constraint you defined.
+            </Text>
+            <Space style={{ width: "100%" }}>
+              {(type === "TEXT" || type === "NUMBER" || type === "BOOLEAN") && (
+                <Input
+                  value={testValue}
+                  placeholder="value to test"
+                  onChange={(e) => {
+                    updateTestValue(e.target.value);
+                  }}
+                  onPressEnter={onTest}
+                />
+              )}
+              {type === "DATE" && (
+                <DatePicker
+                  placeholder="value to test"
+                  onChange={(_, dateString: string) => {
+                    updateTestValue(dateString);
+                  }}
+                />
+              )}
+              <Button type="primary" onClick={onTest}>
+                validate
+              </Button>
+            </Space>
+            <Alert message={description} type="info" showIcon />
+            <Alert
+              message={
+                <>
+                  <Text>The evaluated JS expression is:</Text>
+                  <Text code copyable>
+                    {'eval("' + testConstraint + '")'}
+                  </Text>
+                </>
+              }
+              type="info"
+              showIcon
+            />
           </Space>
-          <Alert message={description} type="info" showIcon />
-          <Alert
-            message={
-              <>
-                <Text>The evaluated JS expression is:</Text>
-                <Text code copyable>
-                  {'eval("' + testConstraint + '")'}
+        </Panel>
+        <Panel header="Developer Instructions" key="2">
+          <Text>
+            The entity reading this string can evaluate the string by
+            interpreting it as a JavaScript expression as follows:
+          </Text>
+          <Paragraph>
+            <ul>
+              <li>
+                <Text>
+                  The following string can be stored as part of a configuration.
                 </Text>
-              </>
-            }
-            type="info"
-            showIcon
-          />
-        </Space>
-      </Panel>
-      <Panel header="Developer Instructions" key="2">
-        <Text>
-          The entity reading this string can evaluate the string by interpreting
-          it as a JavaScript expression as follows:
-        </Text>
-        <Paragraph>
-          <ul>
-            <li>
-              <Text>
-                The following string can be stored as part of a configuration.
-              </Text>
-            </li>
-            <li>
-              <Text>The entity evaluating the constraint replaces </Text>
-              <Text code>{"${VALUE}"}</Text>
-              <Text> with the value received during runtime.</Text>
-            </li>
-            <li>
-              <Text>With the help of the Javascript </Text>
-              <Text code>{"eval()"}</Text>
-              <Text> function, the expression can be evaluated.</Text>
-            </li>
-          </ul>
-        </Paragraph>
-        <Paragraph copyable>
-          <pre>{JSON.stringify(constraint.js)}</pre>
-        </Paragraph>
-      </Panel>
-    </Collapse>
+              </li>
+              <li>
+                <Text>The entity evaluating the constraint replaces </Text>
+                <Text code>{"${VALUE}"}</Text>
+                <Text> with the value received during runtime.</Text>
+              </li>
+              <li>
+                <Text>With the help of the Javascript </Text>
+                <Text code>{"eval()"}</Text>
+                <Text> function, the expression can be evaluated.</Text>
+              </li>
+            </ul>
+          </Paragraph>
+          <Paragraph copyable>
+            <pre>{JSON.stringify(constraint.js)}</pre>
+          </Paragraph>
+        </Panel>
+        <Panel header="Preview Constraint" key="3">
+          <code>
+            <pre>{constraint && JSON.stringify(constraint, null, 2)}</pre>
+          </code>
+        </Panel>
+      </Collapse>
+    </Form.Item>
   );
 
   return (
-    <Space direction="vertical" style={{ width: "100%" }}>
+    // <Space direction="vertical" style={{ width: "100%" }}>
+    //   {Configurator}
+    //   {devMode && DebugSection}
+    // </Space>
+
+    <>
       {Configurator}
       {devMode && DebugSection}
-    </Space>
+    </>
   );
 };

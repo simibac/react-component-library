@@ -3,6 +3,7 @@ import {
   Card,
   Cascader,
   Col,
+  Collapse,
   Form,
   Input,
   Row,
@@ -14,23 +15,20 @@ import TextArea from "antd/lib/input/TextArea";
 import Title from "antd/lib/typography/Title";
 import React, { Dispatch, SetStateAction, useState } from "react";
 
-import { PlusOutlined } from "@ant-design/icons";
-import { ICredentialRequestInput } from "@veramo/selective-disclosure";
+import {
+  CloseCircleOutlined,
+  InfoCircleOutlined,
+  PlusOutlined,
+} from "@ant-design/icons";
 import { ConstraintConfigurator } from "../ConstraintConfigurator";
 import { CascaderOptionType } from "antd/lib/cascader";
-import { DataType, IConstraint, schemas } from "../../constants/toexternalmodule";
-import { IUseCoinstraintGenerator } from "../../hooks/useConstraintGenerator";
-import JsonBlock from "../JsonBlock/JsonBlock";
-
-export interface ClaimConfiguratorProps {
-  claim: ICredentialRequestInput;
-  setClaim: Dispatch<SetStateAction<ICredentialRequestInput>>;
-  selectedContextOptions: Array<string>;
-  setSelectedContextOptions: Dispatch<SetStateAction<Array<string>>>;
-  devMode: boolean;
-  onComplete: () => any;
-  constraintProps: IUseCoinstraintGenerator;
-}
+import {
+  DataType,
+  IConstraint,
+  schemas,
+} from "../../constants/toexternalmodule";
+import { ClaimConfiguratorProps } from "./ClaimConfigurator.types";
+const { Panel } = Collapse;
 
 /**
  * Primary UI component for user interaction
@@ -40,16 +38,12 @@ export const ClaimConfigurator: React.FC<ClaimConfiguratorProps> = ({
   setClaim,
   selectedContextOptions,
   setSelectedContextOptions,
+  dataType,
+  setDataType,
   devMode,
-  onComplete,
-  constraintProps,
+  constraintConfigurator,
+  form,
 }) => {
-  const [claimDataType, setClaimDataType] = useState<DataType | undefined>(
-    undefined
-  );
-
-  const { constraint } = constraintProps;
-
   const addIssuerDid = (did: string, index: number) => {
     let issuers = claim.issuers!;
 
@@ -124,7 +118,7 @@ export const ClaimConfigurator: React.FC<ClaimConfiguratorProps> = ({
       credentialType,
     });
 
-    setClaimDataType(claimDataType);
+    setDataType(claimDataType);
     setSelectedContextOptions(options.map((o) => o.key));
   };
 
@@ -135,85 +129,119 @@ export const ClaimConfigurator: React.FC<ClaimConfiguratorProps> = ({
     });
   };
 
-  const [form] = Form.useForm();
-
   return (
-    <Form form={form}>
-      <Title level={5}>Claim Context (Type)</Title>
-      <Form.Item>
-        <Space direction="vertical" style={{ width: "100%" }}>
-          <Cascader
-            value={selectedContextOptions}
-            style={{ width: "100%" }}
-            options={schemas}
-            fieldNames={{
-              label: "key",
-              value: "key",
-              children: "children",
-            }}
-            onChange={(_, selectedOptions) => {
-              if (selectedOptions) {
-                handleClaimType(selectedOptions);
-              }
-            }}
-            placeholder="Please select"
-          />
-          {claimDataType && (
-            <ConstraintConfigurator
-              {...constraintProps}
-              type={claimDataType}
-              devMode={true}
-            />
-          )}
-        </Space>
+    <Form id="claim-form" form={form} layout="vertical">
+      <Form.Item
+        label="Context"
+        name="context"
+        rules={[{ required: true, message: "Context is required" }]}
+        tooltip={{
+          title: "Context of the claim.",
+          icon: <InfoCircleOutlined />,
+        }}
+        required
+      >
+        <Cascader
+          value={selectedContextOptions}
+          style={{ width: "100%" }}
+          options={schemas}
+          fieldNames={{
+            label: "key",
+            value: "key",
+            children: "children",
+          }}
+          onChange={(_, selectedOptions) => {
+            if (selectedOptions) {
+              handleClaimType(selectedOptions);
+            }
+          }}
+          placeholder="Please select the context"
+        />
       </Form.Item>
+      {dataType && constraintConfigurator}
 
-      <Title level={5}>Accepted Issuers</Title>
-      <>
-        <div>
-          {claim.issuers?.map((issuer, index) => (
-            <Row key={index}>
-              <Col flex={"auto"}>
-                <Form.Item rules={[{ required: true, message: "Missing DID" }]}>
-                  <Input
-                    placeholder="DID"
-                    onChange={(e) => addIssuerDid(e.target.value, index)}
-                  />
-                </Form.Item>
-              </Col>
-              <Col flex={"auto"} style={{ paddingRight: 10, paddingLeft: 10 }}>
-                <Form.Item rules={[{ required: true, message: "Missing URL" }]}>
-                  <Input
-                    placeholder="URL"
-                    onChange={(e) => addIssuerUrl(e.target.value, index)}
-                  />
-                </Form.Item>
-              </Col>
-              <Col>
-                <Button
-                  type={"text"}
-                  onClick={() => {
-                    removeIssuer(index);
-                  }}
-                >
-                  Remove
-                </Button>
-              </Col>
-            </Row>
-          ))}
-          <Form.Item>
-            <Button
-              type="dashed"
-              onClick={() => addIssuer()}
-              block
-              icon={<PlusOutlined />}
-            >
-              Add Issuer
-            </Button>
-          </Form.Item>
-        </div>
-      </>
-      <Title level={5}>Options</Title>
+      {claim.issuers?.map((issuer, index) => (
+        <Form.Item>
+          <Row key={index} align="middle">
+            <Col flex={"auto"}>
+              <Form.Item
+                label="DID"
+                name="did"
+                rules={[{ required: true, message: "DID is required" }]}
+                tooltip={{
+                  title: "Decentralized identifier of the issuer",
+                  icon: <InfoCircleOutlined />,
+                }}
+                required
+                noStyle
+              >
+                <Input
+                  placeholder="did:web:..."
+                  onChange={(e) => addIssuerDid(e.target.value, index)}
+                />
+              </Form.Item>
+            </Col>
+            <Col flex={"auto"} style={{ paddingLeft: 10 }}>
+              <Form.Item
+                label="URL"
+                name="url"
+                rules={[{ required: true, message: "URL is required" }]}
+                tooltip={{
+                  title: "URL of the issuer",
+                  icon: <InfoCircleOutlined />,
+                }}
+                noStyle
+                required
+              >
+                <Input
+                  placeholder="https://..."
+                  onChange={(e) => addIssuerUrl(e.target.value, index)}
+                />
+              </Form.Item>
+            </Col>
+            <Col>
+              <Button
+                type={"text"}
+                onClick={() => {
+                  removeIssuer(index);
+                }}
+                style={{
+                  color: "red",
+                }}
+              >
+                <CloseCircleOutlined />
+              </Button>
+            </Col>
+          </Row>
+        </Form.Item>
+      ))}
+      <Form.Item>
+        <Button
+          type="dashed"
+          onClick={() => addIssuer()}
+          block
+          icon={<PlusOutlined />}
+        >
+          Add a Trusted Issuer
+        </Button>
+      </Form.Item>
+      <Form.Item
+        label="Reason"
+        name="reason"
+        rules={[{ required: true, message: "Please add a reason." }]}
+        tooltip={{
+          title: "We need to know that you are...",
+          icon: <InfoCircleOutlined />,
+        }}
+        required
+      >
+        <TextArea
+          value={claim.reason}
+          onChange={(e) => setReason(e.target.value)}
+          placeholder="State a reason why this claim must be disclosed in the authentication process"
+          autoSize={{ minRows: 3, maxRows: 5 }}
+        />
+      </Form.Item>
       <Form.Item>
         <Row>
           <Col>
@@ -228,17 +256,16 @@ export const ClaimConfigurator: React.FC<ClaimConfiguratorProps> = ({
           </Col>
         </Row>
       </Form.Item>
-      <Form.Item>
-        <TextArea
-          value={claim.reason}
-          onChange={(e) => setReason(e.target.value)}
-          placeholder="Reason"
-          autoSize={{ minRows: 3, maxRows: 5 }}
-        />
-      </Form.Item>
-      <Button>Submit</Button>
-      <JsonBlock title={"Preview Claim"} data={claim} />
-      <JsonBlock title={"Preview Constraint"} data={constraint} />
+
+      {devMode && (
+        <Collapse>
+          <Panel header="Preview Claim" key="1">
+            <code>
+              <pre>{claim && JSON.stringify(claim, null, 2)}</pre>
+            </code>
+          </Panel>
+        </Collapse>
+      )}
     </Form>
   );
 };
